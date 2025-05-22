@@ -48,8 +48,9 @@ export default function BetslipResults({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Get the correct domain for this country
-  const domain = COUNTRY_DOMAINS[country] || 'betpawa.com.gh'; // Default to Ghana if not found
+  const { data: countries } = useCountries();
+  const countryData = getCountryByIso(countries, country);
+  const domain = countryData?.rootDomain || 'betpawa.com.gh';
   
   const handleLoadBetslip = async () => {
     try {
