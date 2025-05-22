@@ -19,7 +19,11 @@ async function fetchCountries(): Promise<CountryData[]> {
     }
   }
 
-  const response = await fetch('https://www.betpawa.com/api/brand/v1/countries/betpawa');
+  const response = await fetch('/api/countries');
+  if (!response.ok) {
+    throw new Error('Failed to fetch country data');
+  }
+  
   const data = await response.json();
   
   sessionStorage.setItem(CACHE_KEY, JSON.stringify({

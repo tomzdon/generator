@@ -2,6 +2,15 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import axios from "axios";
+import { Response } from "express";
+
+const COUNTRIES_CACHE_KEY = 'betpawa_countries';
+const COUNTRIES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+async function fetchCountriesFromApi(): Promise<any> {
+  const response = await axios.get('https://www.betpawa.com/api/brand/v1/countries/betpawa');
+  return response.data;
+}
 import { generateBetslipSchema, generateBookingCodeSchema } from "@shared/schema";
 import { generateBetslip } from "./services/betslipService";
 
@@ -27,6 +36,16 @@ function getCountryCode(req: Request): string | null {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Proxy endpoint for fetching country data
+  app.get("/api/countries", async (_req, res: Response) => {
+    try {
+      const data = await fetchCountriesFromApi();
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching countries:", error);
+      res.status(500).json({ message: "Failed to fetch country data" });
+    }
+  });
   // Country-specific API endpoint to proxy the events data
   app.get("/api/:country/events/popular", async (req, res) => {
     try {
