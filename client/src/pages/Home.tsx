@@ -1,35 +1,37 @@
-import {useState, useEffect} from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import OddsInput from "@/components/OddsInput";
-import ProcessingState from "@/components/ProcessingState";
-import ErrorState from "@/components/ErrorState";
-import NoMatchState from "@/components/NoMatchState";
-import BetslipResults from "@/components/BetslipResults";
-import {generateBetslip} from "@/lib/api";
-import {BetSlipResult} from "@/types";
-import {useCountries, getCountryByBrand} from "@/hooks/use-countries";
+import { generateBetslip } from "@/lib/api";
+import { BetSlipResult } from "@/types";
+import { useCountries, getCountryByBrand } from "@/hooks/use-countries";
 
-function getRandomOdds(min: number, max: number): number {
-    return Math.round(Math.random() * (max - min) + min);
-}
+// Lazy loaded components
+const BetslipResults = lazy(() => import("@/components/BetslipResults"));
+const ErrorState = lazy(() => import("@/components/ErrorState"));
+const NoMatchState = lazy(() => import("@/components/NoMatchState"));
+const ProcessingState = lazy(() => import("@/components/ProcessingState"));
+
+const getRandomOdds = (min: number, max: number) =>
+    Math.round(Math.random() * (max - min) + min);
 
 interface HomeProps {
     brandIdentifier: string;
 }
 
-export default function Home({brandIdentifier}: HomeProps) {
-    const {data: countries} = useCountries();
-    const supportedBrandIdentifiers = countries?.map((c) => c.brandIdentifier.toLowerCase()) ?? [];
+export default function Home({ brandIdentifier }: HomeProps) {
+    const { data: countries } = useCountries();
+    const supportedBrandIdentifiers =
+        countries?.map((c) => c.brandIdentifier.toLowerCase()) ?? [];
 
     const countryData = getCountryByBrand(countries, brandIdentifier);
     const countryCode = countryData?.countryIso2Code.toLowerCase() || "";
 
-    const [targetOdds, setTargetOdds] = useState<number>(() => getRandomOdds(5, 20));
-    const [processing, setProcessing] = useState<boolean>(false);
-    const [processingProgress, setProcessingProgress] = useState<number>(0);
+    const [targetOdds, setTargetOdds] = useState(() => getRandomOdds(5, 20));
+    const [processing, setProcessing] = useState(false);
+    const [processingProgress, setProcessingProgress] = useState(0);
     const [betslipResult, setBetslipResult] = useState<BetSlipResult | null>(null);
-    const [noMatchFound, setNoMatchFound] = useState<boolean>(false);
-    const [error, setError] = useState<boolean>(false);
-    const [invalidBrand, setInvalidBrand] = useState<boolean>(false);
+    const [noMatchFound, setNoMatchFound] = useState(false);
+    const [error, setError] = useState(false);
+    const [invalidBrand, setInvalidBrand] = useState(false);
 
     useEffect(() => {
         const isValid = supportedBrandIdentifiers.includes(brandIdentifier.toLowerCase());
@@ -42,7 +44,6 @@ export default function Home({brandIdentifier}: HomeProps) {
         setNoMatchFound(false);
         setBetslipResult(null);
         setError(false);
-
         setProcessing(true);
         setProcessingProgress(0);
 
@@ -54,19 +55,11 @@ export default function Home({brandIdentifier}: HomeProps) {
             const result = await generateBetslip(countryCode, targetOdds);
             clearInterval(progressInterval);
 
-            if (result) {
-                setProcessingProgress(100);
-                setTimeout(() => {
-                    setProcessing(false);
-                    setBetslipResult(result);
-                }, 300);
-            } else {
-                setProcessingProgress(100);
-                setTimeout(() => {
-                    setProcessing(false);
-                    setNoMatchFound(true);
-                }, 300);
-            }
+            setProcessingProgress(100);
+            setTimeout(() => {
+                setProcessing(false);
+                result ? setBetslipResult(result) : setNoMatchFound(true);
+            }, 300);
         } catch (error) {
             clearInterval(progressInterval);
             setProcessing(false);
@@ -75,25 +68,18 @@ export default function Home({brandIdentifier}: HomeProps) {
         }
     };
 
-    const handleRetry = () => {
-        handleGenerateBetslip();
-    };
-
+    const handleRetry = () => handleGenerateBetslip();
     const handleSuggestedOdds = (suggestedOdds: number) => {
         setTargetOdds(Math.round(suggestedOdds));
         setTimeout(() => handleGenerateBetslip(), 100);
     };
 
-    const handleRegenerateBetslip = () => {
-        handleGenerateBetslip();
-    };
-
     return (
-        <>
+        <Suspense fallback={<div className="text-center mt-8">Loading...</div>}>
             {invalidBrand ? (
                 <ErrorState
                     message={`Invalid brand identifier: ${brandIdentifier}. Supported brands: ${supportedBrandIdentifiers.join(", ")}`}
-                    onRetry={() => window.location.href = "/betpawa-ghana"}
+                    onRetry={() => (window.location.href = "/betpawa-ghana")}
                 />
             ) : (
                 <>
@@ -130,12 +116,12 @@ export default function Home({brandIdentifier}: HomeProps) {
                         <BetslipResults
                             result={betslipResult}
                             targetOdds={targetOdds}
-                            onRegenerate={handleRegenerateBetslip}
+                            onRegenerate={handleGenerateBetslip}
                             brandIdentifier={brandIdentifier}
                         />
                     )}
                 </>
             )}
-        </>
+        </Suspense>
     );
 }
