@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-interface CountryData {
+export interface CountryData {
   brandIdentifier: string;
   countryIso2Code: string;
   rootDomain: string;
@@ -39,6 +39,6 @@ export function useCountries() {
   });
 }
 
-export function getCountryByIso(countries: CountryData[] | undefined, iso: string): CountryData | undefined {
-  return countries?.find(c => c.countryIso2Code.toLowerCase() === iso.toLowerCase());
+export function getCountryByBrand(countries: CountryData[] | undefined, brandIdentifier: string): CountryData | undefined {
+  return countries?.find(c => c.brandIdentifier.toLowerCase() === brandIdentifier.toLowerCase());
 }

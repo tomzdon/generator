@@ -13,8 +13,8 @@ function CountryValidator({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: countries, isLoading, error } = useCountries();
   
-  // Extract country code from path
-  const countryCode = location.split("/")[1]?.toLowerCase();
+  // Extract brand identifier from path
+  const brandIdentifier = location.split("/")[1];
   
   if (isLoading) {
     return <div className="p-4">Loading...</div>;
@@ -24,8 +24,8 @@ function CountryValidator({ children }: { children: React.ReactNode }) {
     return <NotFound />;
   }
   
-  // Check if country code is supported
-  if (!countryCode || !getCountryByIso(countries, countryCode)) {
+  // Check if brand identifier is supported
+  if (!brandIdentifier || !getCountryByBrand(countries, brandIdentifier)) {
     return <NotFound />;
   }
   

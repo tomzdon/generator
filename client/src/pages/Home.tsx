@@ -22,12 +22,13 @@ function getRandomOdds(min: number, max: number): number {
 }
 
 interface HomeProps {
-  country: string;
+  country: string; // This is actually brandIdentifier
 }
 
-export default function Home({ country }: HomeProps) {
-  // Validate country code
-  const countryCode = country.toLowerCase() as CountryCode;
+export default function Home({ country: brandIdentifier }: HomeProps) {
+  const { data: countries } = useCountries();
+  const countryData = getCountryByBrand(countries, brandIdentifier);
+  const countryCode = countryData?.countryIso2Code.toLowerCase() || '';
   
   // Initialize with random odds between 5 and 20
   const [targetOdds, setTargetOdds] = useState<number>(() => getRandomOdds(5, 20));

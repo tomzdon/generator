@@ -3,14 +3,16 @@ import { BetSlipResult } from "@/types";
 
 const API_BASE = "/api";
 
-export async function generateBetslip(country: string, targetOdds: number): Promise<BetSlipResult | null> {
+export async function generateBetslip(brandIdentifier: string, targetOdds: number): Promise<BetSlipResult | null> {
   try {
     const { data: countries } = await queryClient.getQueryData(['countries']) || {};
-    const countryData = countries?.find(c => c.countryIso2Code.toLowerCase() === country.toLowerCase());
+    const countryData = countries?.find(c => c.brandIdentifier.toLowerCase() === brandIdentifier.toLowerCase());
     
     if (!countryData) {
-      throw new Error(`Invalid country code: ${country}`);
+      throw new Error(`Invalid brand identifier: ${brandIdentifier}`);
     }
+    
+    const countryCode = countryData.countryIso2Code.toLowerCase();
     
     const response = await apiRequest("POST", `${API_BASE}/${country}/betslip/generate`, {
       targetOdds,

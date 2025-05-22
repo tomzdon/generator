@@ -49,7 +49,7 @@ export default function BetslipResults({
   const [isLoading, setIsLoading] = useState(false);
   
   const { data: countries } = useCountries();
-  const countryData = getCountryByIso(countries, country);
+  const countryData = getCountryByBrand(countries, country);
   const domain = countryData?.rootDomain || 'betpawa.com.gh';
   
   const handleLoadBetslip = async () => {
