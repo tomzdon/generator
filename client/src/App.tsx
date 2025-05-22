@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Layout from "@/components/Layout";
-import { useCountries, getCountryByIso, getCountryByBrand } from "@/hooks/use-countries";
+import { useCountries, getCountryByBrand } from "@/hooks/use-countries";
 
 function CountryValidator({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -43,16 +43,18 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={() => (
-          <div className="p-4 bg-destructive/10 border border-destructive text-destructive rounded-md max-w-md mx-auto mt-10">
-            <h1 className="text-xl font-bold mb-2">Wrong configuration</h1>
-            <p className="mb-4">Please specify a country code in the URL (e.g., /gh, /ng, etc.)</p>
-            <p className="text-sm">Supported countries: {countries.map(c => c.countryIso2Code.toLowerCase()).join(', ')}</p>
-          </div>
+            <div className="p-4 bg-destructive/10 border border-destructive text-destructive rounded-md max-w-md mx-auto mt-10">
+              <h1 className="text-xl font-bold mb-2">Wrong configuration</h1>
+              <p className="mb-4">Please specify a valid brand identifier in the URL (e.g., /betpawa-gh, /betpawa-ng, etc.)</p>
+              <p className="text-sm">
+                Supported brand identifiers: {countries.map(c => c.brandIdentifier).join(', ')}
+              </p>
+            </div>
         )} />
-        <Route path="/:country">
+        <Route path="/:brandIdentifier">
           {(params) => (
             <CountryValidator>
-              <Home country={params.country} />
+              <Home brandIdentifier={params.brandIdentifier} />
             </CountryValidator>
           )}
         </Route>

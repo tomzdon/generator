@@ -1,165 +1,141 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect} from "react";
 import OddsInput from "@/components/OddsInput";
 import ProcessingState from "@/components/ProcessingState";
 import ErrorState from "@/components/ErrorState";
 import NoMatchState from "@/components/NoMatchState";
 import BetslipResults from "@/components/BetslipResults";
-import { generateBetslip } from "@/lib/api";
-import { BetSlipResult } from "@/types";
-import { useCountries, getCountryByBrand } from "@/hooks/use-countries";
+import {generateBetslip} from "@/lib/api";
+import {BetSlipResult} from "@/types";
+import {useCountries, getCountryByBrand} from "@/hooks/use-countries";
 
-// List of supported country codes (duplicated from App.tsx for type safety)
-const SUPPORTED_COUNTRIES = [
-  'ao', 'bj', 'bw', 'cd', 'cf', 'cg', 'ci', 'cm', 'ga', 'gh', 
-  'ke', 'lr', 'ls', 'mw', 'mz', 'ng', 'rw', 'sl', 'sn', 'tz', 'ug', 'zm', 'zw'
-] as const;
-
-type CountryCode = typeof SUPPORTED_COUNTRIES[number];
-
-// Helper function to generate random odds between min and max values
 function getRandomOdds(min: number, max: number): number {
-  // Get a random whole number between min and max
-  return Math.round(Math.random() * (max - min) + min);
+    return Math.round(Math.random() * (max - min) + min);
 }
 
 interface HomeProps {
-  country: string; // This is actually brandIdentifier
+    brandIdentifier: string;
 }
 
-export default function Home({ country: brandIdentifier }: HomeProps) {
-  const { data: countries } = useCountries();
-  const countryData = getCountryByBrand(countries, brandIdentifier);
-  const countryCode = countryData?.countryIso2Code.toLowerCase() || '';
-  
-  // Initialize with random odds between 5 and 20
-  const [targetOdds, setTargetOdds] = useState<number>(() => getRandomOdds(5, 20));
-  const [processing, setProcessing] = useState<boolean>(false);
-  const [processingProgress, setProcessingProgress] = useState<number>(0);
-  const [betslipResult, setBetslipResult] = useState<BetSlipResult | null>(null);
-  const [noMatchFound, setNoMatchFound] = useState<boolean>(false);
-  const [error, setError] = useState<boolean>(false);
-  const [countryError, setCountryError] = useState<boolean>(false);
-  
-  // Validate country on mount
-  useEffect(() => {
-    if (!SUPPORTED_COUNTRIES.includes(countryCode as any)) {
-      setCountryError(true);
-    } else {
-      setCountryError(false);
-    }
-  }, [countryCode]);
-  
-  const handleGenerateBetslip = async () => {
-    // Don't proceed if country is invalid
-    if (countryError) {
-      return;
-    }
-    
-    // Reset states
-    setNoMatchFound(false);
-    setBetslipResult(null);
-    setError(false);
-    
-    // Start processing
-    setProcessing(true);
-    setProcessingProgress(0);
-    
-    // Simulate processing progress updates
-    const progressInterval = setInterval(() => {
-      setProcessingProgress(prev => {
-        const newProgress = Math.min(prev + 5, 95);
-        return newProgress;
-      });
-    }, 100);
+export default function Home({brandIdentifier}: HomeProps) {
+    const {data: countries} = useCountries();
+    const supportedBrandIdentifiers = countries?.map((c) => c.brandIdentifier.toLowerCase()) ?? [];
 
-    try {
-      const result = await generateBetslip(countryCode, targetOdds);
-      clearInterval(progressInterval);
-      
-      if (result) {
-        setProcessingProgress(100);
-        setTimeout(() => {
-          setProcessing(false);
-          setBetslipResult(result);
-        }, 300);
-      } else {
-        setProcessingProgress(100);
-        setTimeout(() => {
-          setProcessing(false);
-          setNoMatchFound(true);
-        }, 300);
-      }
-    } catch (error) {
-      clearInterval(progressInterval);
-      setProcessing(false);
-      setError(true);
-      console.error("Error generating betslip:", error);
-    }
-  };
+    const countryData = getCountryByBrand(countries, brandIdentifier);
+    const countryCode = countryData?.countryIso2Code.toLowerCase() || "";
 
-  const handleRetry = () => {
-    handleGenerateBetslip();
-  };
+    const [targetOdds, setTargetOdds] = useState<number>(() => getRandomOdds(5, 20));
+    const [processing, setProcessing] = useState<boolean>(false);
+    const [processingProgress, setProcessingProgress] = useState<number>(0);
+    const [betslipResult, setBetslipResult] = useState<BetSlipResult | null>(null);
+    const [noMatchFound, setNoMatchFound] = useState<boolean>(false);
+    const [error, setError] = useState<boolean>(false);
+    const [invalidBrand, setInvalidBrand] = useState<boolean>(false);
 
-  const handleSuggestedOdds = (suggestedOdds: number) => {
-    // Round to whole number
-    const roundedOdds = Math.round(suggestedOdds);
-    setTargetOdds(roundedOdds);
-    setTimeout(() => handleGenerateBetslip(), 100);
-  };
+    useEffect(() => {
+        const isValid = supportedBrandIdentifiers.includes(brandIdentifier.toLowerCase());
+        setInvalidBrand(!isValid);
+    }, [brandIdentifier, supportedBrandIdentifiers]);
 
-  const handleRegenerateBetslip = () => {
-    handleGenerateBetslip();
-  };
+    const handleGenerateBetslip = async () => {
+        if (invalidBrand) return;
 
-  return (
-    <>
-      {countryError ? (
-        <ErrorState 
-          message={`Invalid country code: ${country}. Supported countries include: ${SUPPORTED_COUNTRIES.join(', ')}`}
-          onRetry={() => window.location.href = '/gh'}
-        />
-      ) : (
+        setNoMatchFound(false);
+        setBetslipResult(null);
+        setError(false);
+
+        setProcessing(true);
+        setProcessingProgress(0);
+
+        const progressInterval = setInterval(() => {
+            setProcessingProgress((prev) => Math.min(prev + 5, 95));
+        }, 100);
+
+        try {
+            const result = await generateBetslip(countryCode, targetOdds);
+            clearInterval(progressInterval);
+
+            if (result) {
+                setProcessingProgress(100);
+                setTimeout(() => {
+                    setProcessing(false);
+                    setBetslipResult(result);
+                }, 300);
+            } else {
+                setProcessingProgress(100);
+                setTimeout(() => {
+                    setProcessing(false);
+                    setNoMatchFound(true);
+                }, 300);
+            }
+        } catch (error) {
+            clearInterval(progressInterval);
+            setProcessing(false);
+            setError(true);
+            console.error("Error generating betslip:", error);
+        }
+    };
+
+    const handleRetry = () => {
+        handleGenerateBetslip();
+    };
+
+    const handleSuggestedOdds = (suggestedOdds: number) => {
+        setTargetOdds(Math.round(suggestedOdds));
+        setTimeout(() => handleGenerateBetslip(), 100);
+    };
+
+    const handleRegenerateBetslip = () => {
+        handleGenerateBetslip();
+    };
+
+    return (
         <>
-          <OddsInput 
-            targetOdds={targetOdds} 
-            setTargetOdds={setTargetOdds} 
-            onGenerate={handleGenerateBetslip}
-            disabled={processing}
-          />
-          
-          {processing && (
-            <ProcessingState 
-              progress={processingProgress} 
-              message="Generating betslip" 
-            />
-          )}
+            {invalidBrand ? (
+                <ErrorState
+                    message={`Invalid brand identifier: ${brandIdentifier}. Supported brands: ${supportedBrandIdentifiers.join(", ")}`}
+                    onRetry={() => window.location.href = "/betpawa-ghana"}
+                />
+            ) : (
+                <>
+                    <OddsInput
+                        targetOdds={targetOdds}
+                        setTargetOdds={setTargetOdds}
+                        onGenerate={handleGenerateBetslip}
+                        disabled={processing}
+                    />
 
-          {error && (
-            <ErrorState 
-              message="Unable to generate betslip. Please try again later."
-              onRetry={handleRetry}
-            />
-          )}
+                    {processing && (
+                        <ProcessingState
+                            progress={processingProgress}
+                            message="Generating betslip"
+                        />
+                    )}
 
-          {noMatchFound && (
-            <NoMatchState 
-              targetOdds={targetOdds}
-              onTryLower={() => handleSuggestedOdds(targetOdds * 0.65)}
-              onTryHigher={() => handleSuggestedOdds(targetOdds * 1.5)}
-            />
-          )}
+                    {error && (
+                        <ErrorState
+                            message="Unable to generate betslip. Please try again later."
+                            onRetry={handleRetry}
+                        />
+                    )}
 
-          {betslipResult && (
-            <BetslipResults 
-              result={betslipResult}
-              targetOdds={targetOdds}
-              onRegenerate={handleRegenerateBetslip}
-              country={countryCode}
-            />
-          )}
+                    {noMatchFound && (
+                        <NoMatchState
+                            targetOdds={targetOdds}
+                            onTryLower={() => handleSuggestedOdds(targetOdds * 0.65)}
+                            onTryHigher={() => handleSuggestedOdds(targetOdds * 1.5)}
+                        />
+                    )}
+
+                    {betslipResult && (
+                        <BetslipResults
+                            result={betslipResult}
+                            targetOdds={targetOdds}
+                            onRegenerate={handleRegenerateBetslip}
+                            brandIdentifier={brandIdentifier}
+                        />
+                    )}
+                </>
+            )}
         </>
-      )}
-    </>
-  );
+    );
 }

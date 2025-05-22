@@ -1,5 +1,5 @@
 import { apiRequest, queryClient } from "./queryClient";
-import { BetSlipResult } from "@/types";
+import {BetSlipResult, Country} from "@/types";
 
 const API_BASE = "/api";
 
@@ -8,9 +8,8 @@ export async function generateBetslip(
   targetOdds: number,
 ): Promise<BetSlipResult | null> {
   try {
-    const { data: countries } =
-      (await queryClient.getQueryData(["countries"])) || {};
-    console.log(countries);
+    const countries = queryClient.getQueryData(["countries"]) as Country[] ;
+
     const countryData = countries?.find(
       (c) => c.countryIso2Code.toLowerCase() === countryCode.toLowerCase(),
     );
