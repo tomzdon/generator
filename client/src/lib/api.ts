@@ -1,4 +1,4 @@
-import { apiRequest } from "./queryClient";
+import { apiRequest, queryClient } from "./queryClient";
 import { BetSlipResult } from "@/types";
 
 const API_BASE = "/api";
